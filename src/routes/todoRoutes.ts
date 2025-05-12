@@ -1,35 +1,34 @@
 import { Router, Request, Response } from "express";
 import pool from "../config/db";
+import { Todo, TodoBody } from "../models/todos.model";
 
 const todoRoutes = Router();
-
-interface Todo {
-  id: number;
-  title: string;
-  completed: boolean;
-}
 
 todoRoutes.get("/", (req: Request, res: Response) => {
   res.send("Welcome to the To-Do List App!");
 });
 
-todoRoutes.get("/todos", async (req: Request, res: Response) => {
+// GET all todos
+todoRoutes.get("/todos", async (req: Request, res: Response<Todo[]>) => {
   try {
     const result = await pool.query("SELECT * FROM todos");
     const todos: Todo[] = result.rows;
     res.json(todos);
   } catch (error) {
     console.error("Error fetching todos", error);
-    res.status(500).json({ error: "Error fetching todos" });
+    res.status(500).json({ error: "Error fetching todos" } as any);
   }
 });
 
+// POST a new todo
 todoRoutes.post(
   "/todos",
-  async (req: Request, res: Response): Promise<void> => {
+  async (
+    req: Request<{}, {}, TodoBody>,
+    res: Response<Todo | { error: string }>
+  ) => {
     const { title, completed } = req.body;
 
-    // TypeScript type-based input validation
     if (typeof title !== "string" || title.trim() === "") {
       res.status(400).json({ error: "Invalid title data" });
       return;
@@ -37,8 +36,8 @@ todoRoutes.post(
 
     try {
       const result = await pool.query(
-        "INSERT INTO todos (title) VALUES ($1) RETURNING *",
-        [title]
+        "INSERT INTO todos (title, completed) VALUES ($1, $2) RETURNING *",
+        [title, completed ?? false]
       );
       const createdTodo: Todo = result.rows[0];
       res.status(201).json(createdTodo);
@@ -49,12 +48,12 @@ todoRoutes.post(
   }
 );
 
+// DELETE a todo
 todoRoutes.delete(
   "/todos/:id",
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request<{ id: string }>, res: Response<{ error?: string }>) => {
     const todoID = parseInt(req.params.id, 10);
 
-    // TypeScript type-based input validation
     if (isNaN(todoID)) {
       res.status(400).json({ error: "Invalid todo ID" });
       return;
@@ -70,22 +69,31 @@ todoRoutes.delete(
   }
 );
 
+// PUT (update) a todo title
 todoRoutes.put(
   "/todos/:id",
-  async (req: Request, res: Response): Promise<void> => {
+  async (
+    req: Request<{ id: string }, {}, TodoBody>,
+    res: Response<{ error?: string }>
+  ) => {
     const todoID = parseInt(req.params.id, 10);
-    const { title } = req.body;
+    const { title, completed } = req.body;
 
     if (typeof title !== "string" || title.trim() === "") {
       res.status(400).json({ error: "Invalid title data" });
       return;
     }
 
+    if (typeof completed !== "boolean") {
+      res.status(400).json({ error: "Invalid completed value" });
+      return;
+    }
+
     try {
-      await pool.query("UPDATE todos SET title = $1 WHERE id = $2", [
-        title,
-        todoID,
-      ]);
+      await pool.query(
+        "UPDATE todos SET title = $1, completed = $2 WHERE id = $3",
+        [title, completed, todoID]
+      );
       res.sendStatus(200);
     } catch (error) {
       console.error("Error updating todo", error);
