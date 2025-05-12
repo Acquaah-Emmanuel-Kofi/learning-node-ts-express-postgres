@@ -2,7 +2,7 @@
 
 A beginner-friendly backend starter project using **Node.js**, **TypeScript**, **Express**, and **PostgreSQL**.
 
-A beginner-friendly backend starter project using Node.js, TypeScript, Express, and PostgreSQL. Built to learn clean architecture, REST APIs, and database integration step by step.
+This project is designed to help me learn backend development fundamentals step-by-step: building APIs, connecting to a database, handling errors, and writing clean code.
 
 ---
 
