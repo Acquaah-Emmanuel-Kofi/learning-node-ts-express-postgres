@@ -70,4 +70,28 @@ todoRoutes.delete(
   }
 );
 
+todoRoutes.put(
+  "/todos/:id",
+  async (req: Request, res: Response): Promise<void> => {
+    const todoID = parseInt(req.params.id, 10);
+    const { title } = req.body;
+
+    if (typeof title !== "string" || title.trim() === "") {
+      res.status(400).json({ error: "Invalid title data" });
+      return;
+    }
+
+    try {
+      await pool.query("UPDATE todos SET title = $1 WHERE id = $2", [
+        title,
+        todoID,
+      ]);
+      res.sendStatus(200);
+    } catch (error) {
+      console.error("Error updating todo", error);
+      res.status(500).json({ error: "Error updating todo" });
+    }
+  }
+);
+
 export default todoRoutes;
