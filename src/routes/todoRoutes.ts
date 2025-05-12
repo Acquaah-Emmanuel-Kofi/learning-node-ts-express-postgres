@@ -49,4 +49,25 @@ todoRoutes.post(
   }
 );
 
+todoRoutes.delete(
+  "/todos/:id",
+  async (req: Request, res: Response): Promise<void> => {
+    const todoID = parseInt(req.params.id, 10);
+
+    // TypeScript type-based input validation
+    if (isNaN(todoID)) {
+      res.status(400).json({ error: "Invalid todo ID" });
+      return;
+    }
+
+    try {
+      await pool.query("DELETE FROM todos WHERE id = $1", [todoID]);
+      res.sendStatus(200);
+    } catch (error) {
+      console.error("Error deleting todo", error);
+      res.status(500).json({ error: "Error deleting todo" });
+    }
+  }
+);
+
 export default todoRoutes;
