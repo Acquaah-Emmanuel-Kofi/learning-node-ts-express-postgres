@@ -24,4 +24,29 @@ todoRoutes.get("/todos", async (req: Request, res: Response) => {
   }
 });
 
+todoRoutes.post(
+  "/todos",
+  async (req: Request, res: Response): Promise<void> => {
+    const { title, completed } = req.body;
+
+    // TypeScript type-based input validation
+    if (typeof title !== "string" || title.trim() === "") {
+      res.status(400).json({ error: "Invalid title data" });
+      return;
+    }
+
+    try {
+      const result = await pool.query(
+        "INSERT INTO todos (title) VALUES ($1) RETURNING *",
+        [title]
+      );
+      const createdTodo: Todo = result.rows[0];
+      res.status(201).json(createdTodo);
+    } catch (error) {
+      console.error("Error adding todo", error);
+      res.status(500).json({ error: "Error adding todo" });
+    }
+  }
+);
+
 export default todoRoutes;
